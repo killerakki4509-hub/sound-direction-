@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sound Compass · Directional Frequency Teller</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-deep: #060a12;
+      --bg-panel: rgba(14, 20, 32, 0.85);
+      --bg-elevated: #101827;
+      --border-subtle: #1c2a40;
+      --border-glow: #2f4a7a;
+      --text-primary: #edf2fc;
+      --text-secondary: #8da3c4;
+      --text-muted: #4e6480;
+      --accent-blue: #3d8bff;
+      --accent-cyan: #4fd1ff;
+      --accent-glow: #1e6eff;
+      --gold: #f0b34b;
+      --gold-dim: #a67c2e;
+      --radius: 1.75rem;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg-deep);
+      background-image:
+        radial-gradient(ellipse 70% 50% at 50% -5%, #122542 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 100% 100%, #0a1528 0%, transparent 50%),
+        radial-gradient(ellipse 45% 35% at 0% 85%, #081020 0%, transparent 50%);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 1.5rem;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ---- decorative glow orbs ---- */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(130px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 {
+      width: 520px; height: 520px;
+      background: #1e6eff;
+      top: -220px; right: -160px;
+      opacity: 0.16;
+    }
+    .orb-2 {
+      width: 420px; height: 420px;
+      background: #4fd1ff;
+      bottom: -180px; left: -140px;
+      opacity: 0.10;
+    }
+    .orb-3 {
+      width: 300px; height: 300px;
+      background: #8b5cf6;
+      top: 45%; left: 40%;
+      opacity: 0.07;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+    }
+
+    /* ---- TOP NAV ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.75rem;
+      background: rgba(10, 16, 28, 0.78);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 100px;
+      box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.8);
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, #1e6eff, #4fd1ff);
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 0 22px #1e6eff66, inset 0 0 10px #ffffff33;
+      flex-shrink: 0;
+    }
+
+    .logo h1 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      line-height: 1.2;
+    }
+    .logo p {
+      font-size: 0.62rem;
+      color: var(--text-secondary);
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      padding: 0.5rem 0.95rem;
+      border-radius: 40px;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .nav-links a:hover {
+      color: #d0e4ff;
+      background: #16233a;
+      border-color: #24395a;
+    }
+
+    /* ---- HERO ---- */
+    .hero {
+      padding: 4rem 2rem 3.5rem;
+      text-align: center;
+      position: relative;
+      background: rgba(12, 18, 30, 0.55);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 15%; right: 15%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #4fd1ff88, transparent);
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #1a1206, #2a1e0a);
+      border: 1px solid var(--gold-dim);
+      padding: 0.5rem 1.3rem;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      color: var(--gold);
+      margin-bottom: 1.75rem;
+      text-shadow: 0 0 12px #f0b34b55;
+      box-shadow: 0 0 22px #f0b34b1a, inset 0 0 10px #f0b34b12;
+    }
+
+    .hero h2 {
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      margin-bottom: 1.25rem;
+      background: linear-gradient(180deg, #ffffff 0%, #a8ccff 55%, #4fd1ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 40px #1e6eff44);
+    }
+
+    .hero p {
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+      max-width: 620px;
+      margin: 0 auto 2rem;
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 0.9rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      padding: 0.85rem 1.9rem;
+      border-radius: 60px;
+      transition: all 0.22s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #1e6eff, #4fd1ff);
+      color: #04121f;
+      box-shadow: 0 0 30px #1e6eff66, 0 8px 22px -6px #00000099;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 44px #4fd1ff88, 0 12px 28px -6px #000000cc;
+    }
+
+    .btn-ghost {
+      background: #101a2b;
+      color: #b6cdea;
+      border: 1px solid #23374f;
+    }
+    .btn-ghost:hover {
+      background: #16243a;
+      border-color: #2f4a6e;
+      color: #d6e6ff;
+      transform: translateY(-2px);
+    }
+
+    /* ---- STATS STRIP ---- */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1rem;
+      padding: 1.5rem;
+      background: rgba(12, 18, 30, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.8);
+    }
+
+    .stat {
+      text-align: center;
+      padding: 0.9rem 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      background: linear-gradient(180deg, #ffffff, #7fb0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 16px #1e6eff55);
+      line-height: 1.1;
+    }
+
+    .stat-label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 2.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-top: 0.4rem;
+    }
+
+    /* ---- SECTION HEADINGS ---- */
+    .section {
+      scroll-margin-top: 1.5rem;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 1.5rem;
+      padding-left: 0.25rem;
+    }
+
+    .section-head .num {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: var(--accent-cyan);
+      background: #0c1a2c;
+      border: 1px solid #1f3552;
+      padding: 0.35rem 0.8rem;
+      border-radius: 30px;
+      box-shadow: 0 0 16px #4fd1ff22;
+    }
+
+    .section-head h3 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+    }
+
+    .section-head .line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, #1e2f4a, transparent);
+    }
+
+    /* ---- CONTENT CARDS ---- */
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: rgba(14, 20, 32, 0.82);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 1.75rem 1.6rem;
+      transition: all 0.28s ease;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 18%; right: 18%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #4fd1ff66, transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      border-color: #26405f;
+      box-shadow: 0 26px 50px -20px rgba(0, 20, 60, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .card:hover::before {
+      opacity: 1;
+    }
+
+    .card-icon {
+      width: 52px; height: 52px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #11203a, #0c1526);
+      border: 1px solid #1f3552;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      margin-bottom: 1.2rem;
+      box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.6), 0 0 18px #1e6eff22;
+    }
+
+    .card h4 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+      letter-spacing: -0.2px;
+    }
+
+    .card p {
+      font-size: 0.86rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* ---- INTERACTIVE DEMO ---- */
+    .demo-wrap {
+      background: rgba(12, 18, 30, 0.7);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 2rem;
+      box-shadow: 0 24px 50px -20px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    .demo-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    @media (max-width: 700px) {
+      .demo-inner { grid-template-columns: 1fr; }
+    }
+
+    .compass-mini {
+      position: relative;
+      width: 100%;
+      max-width: 300px;
+      aspect-ratio: 1/1;
+      margin: 0 auto;
+    }
+
+    .compass-mini .ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%, #0b1422, #05080e 80%);
+      box-shadow:
+        0 0 0 1px #1e2f4a,
+        0 0 50px -10px #1e6eff44,
+        inset 0 0 60px rgba(0, 0, 0, 0.9);
+    }
+
+    .compass-mini .ring::after {
+      content: '';
+      position: absolute;
+      inset: 22px;
+      border-radius: 50%;
+      border: 1px dashed #223752;
+      opacity: 0.7;
+    }
+
+    .compass-mini .needle {
+      position: absolute;
+      bottom: 50%;
+      left: 50%;
+      width: 4px;
+      height: 40%;
+      background: linear-gradient(to top, #1e6eff, #4fd1ff, #e0f2ff);
+      border-radius: 6px 6px 2px 2px;
+      transform: translateX(-50%) rotate(0deg);
+      transform-origin: bottom center;
+      box-shadow: 0 0 20px #1e6eff, 0 0 6px #ffffffaa;
+      transition: transform 0.55s cubic-bezier(0.34, 1.3, 0.64, 1);
+      z-index: 5;
+    }
+
+    .compass-mini .needle::after {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 14px; height: 14px;
+      background: radial-gradient(circle, #ffffff, #a0d0ff);
+      border-radius: 50%;
+      box-shadow: 0 0 22px #4fd1ff, 0 0 40px #1e6eff;
+      border: 2px solid #d0ecff;
+    }
+
+    .compass-mini .hub {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 18px; height: 18px;
+      background: radial-gradient(circle at 35% 30%, #eaf4ff, #6fa8ff);
+      border-radius: 50%;
+      box-shadow: 0 0 22px #4fd1ff, 0 0 6px #ffffff;
+      z-index: 10;
+      border: 2px solid #ffffffcc;
+    }
+
+    .compass-mini .cardinal {
+      position: absolute;
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #5f7da0;
+      width: 38px; height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(8, 14, 24, 0.9);
+      border-radius: 50%;
+      border: 1px solid #1f3250;
+      backdrop-filter: blur(6px);
+      z-index: 6;
+      transition: color 0.3s, border-color 0.3s, box-shadow 0.3s;
+    }
+    .compass-mini .cardinal.active {
+      color: #b8d8ff;
+      border-color: #4fd1ff;
+      box-shadow: 0 0 20px #4fd1ff66;
+    }
+    .compass-mini .cardinal.n { top: -4px; left: 50%; transform: translateX(-50%); }
+    .compass-mini .cardinal.s { bottom: -4px; left: 50%; transform: translateX(-50%); }
+    .compass-mini .cardinal.e { right: -4px; top: 50%; transform: translateY(-50%); }
+    .compass-mini .cardinal.w { left: -4px; top: 50%; transform: translateY(-50%); }
+
+    .demo-readout {
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+
+    .readout-box {
+      background: #0a1019;
+      border: 1px solid #1c2c44;
+      border-radius: 1.25rem;
+      padding: 1.2rem 1.4rem;
+      box-shadow: inset 0 2px 10px #00000066;
+    }
+
+    .readout-box .label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 0.55rem;
+    }
+
+    .readout-box .big {
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1;
+      background: linear-gradient(180deg, #ffffff, #a8ccff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 22px #1e6eff66);
+    }
+
+    .readout-box .big small {
+      font-size: 1rem;
+      font-weight: 500;
+      -webkit-text-fill-color: #7f9ed0;
+    }
+
+    .slider-wrap {
+      margin-top: 0.3rem;
+    }
+
+    .slider-wrap .top-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.6rem;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .slider-wrap .top-row span:last-child {
+      color: #a8ccff;
+      background: #101d30;
+      padding: 0.2rem 0.7rem;
+      border-radius: 30px;
+      border: 1px solid #1f3452;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 20px;
+      background: linear-gradient(90deg, #1e6eff, #4fd1ff);
+      outline: none;
+      box-shadow: 0 0 12px #1e6eff44;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #ffffff, #b0d4ff);
+      border: 2px solid #ffffffdd;
+      box-shadow: 0 0 20px #4fd1ff, 0 0 6px #00000099;
+      transition: transform 0.15s ease;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #ffffff, #b0d4ff);
+      border: 2px solid #ffffffdd;
+      box-shadow: 0 0 20px #4fd1ff;
+      cursor: pointer;
+    }
+
+    /* ---- TEAM ---- */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+
+    .member {
+      background: rgba(14, 20, 32, 0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 1.6rem 1rem;
+      text-align: center;
+      transition: all 0.25s ease;
+      box-shadow: 0 16px 36px -18px rgba(0, 0, 0, 0.85);
+    }
+
+    .member:hover {
+      transform: translateY(-4px);
+      border-color: #2a4468;
+      box-shadow: 0 22px 44px -18px rgba(0, 30, 80, 0.9);
+    }
+
+    .member .avatar {
+      width: 62px; height: 62px;
+      margin: 0 auto 0.9rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1e6eff, #4fd1ff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #04121f;
+      box-shadow: 0 0 26px #1e6eff66, inset 0 0 12px #ffffff44;
+      border: 2px solid #ffffff22;
+    }
+
+    .member h5 {
+      font-size: 0.98rem;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      margin-bottom: 0.3rem;
+    }
+
+    .member .role {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* ---- FAQ ---- */
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .faq-item {
+      background: rgba(14, 20, 32, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 1.25rem;
+      overflow: hidden;
+      transition: border-color 0.25s;
+    }
+
+    .faq-item.open {
+      border-color: #26405f;
+    }
+
+    .faq-q {
+      width: 100%;
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-align: left;
+      padding: 1.15rem 1.4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      gap: 1rem;
+      letter-spacing: -0.1px;
+    }
+
+    .faq-q .chev {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: #101c2e;
+      border: 1px solid #1f3452;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: var(--accent-cyan);
+      transition: transform 0.3s ease, background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .faq-item.open .chev {
+      transform: rotate(180deg);
+      background: #16273f;
+    }
+
+    .faq-a {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease, padding 0.3s ease;
+      padding: 0 1.4rem;
+      font-size: 0.86rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    .faq-item.open .faq-a {
+      max-height: 300px;
+      padding: 0 1.4rem 1.3rem;
+    }
+
+    /* ---- FOOTER ---- */
+    .footer {
+      text-align: center;
+      padding: 2rem 1rem 1.5rem;
+      border-top: 1px solid #131f30;
+      margin-top: 0.5rem;
+    }
+
+    .footer p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      letter-spacing: 0.4px;
+    }
+
+    .footer .names {
+      margin-top: 0.6rem;
+      font-size: 0.82rem;
+      color: #7f9ed0;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+
+    .footer .names b {
+      color: #b8d4ff;
+      font-weight: 600;
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 0.9rem; }
+      .nav { padding: 0.9rem 1.2rem; border-radius: 2rem; }
+      .nav-links { width: 100%; justify-content: center; }
+      .hero { padding: 2.8rem 1.2rem; }
+      .demo-wrap { padding: 1.4rem; }
+      .stats { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- decorative orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="shell">
+
+    <!-- NAVIGATION -->
+    <nav class="nav">
+      <div class="logo">
+        <div class="logo-icon">🧭</div>
+        <div>
+          <h1>Sound Compass</h1>
+          <p>Directional Frequency Teller</p>
+        </div>
+      </div>
+      <div class="nav-links">
+        <a href="#about">About</a>
+        <a href="#how">How It Works</a>
+        <a href="#demo">Live Demo</a>
+        <a href="#team">Team</a>
+        <a href="#faq">FAQ</a>
+      </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-badge">◆ PERMIUM 4¢ · PRO EDITION</div>
+      <h2>Hear the World<br>in Every Direction</h2>
+      <p>
+        The Directional Sound Frequency Teller is a smart acoustic instrument that
+        detects the source direction and dominant frequency of any sound in real time —
+        turning invisible vibrations into clear, actionable data.
+      </p>
+      <div class="hero-actions">
+        <a href="#demo" class="btn btn-primary">⚡ Try Live Demo</a>
+        <a href="#how" class="btn btn-ghost">📖 How It Works</a>
+      </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="stats">
+      <div class="stat">
+        <div class="stat-value">20–2000</div>
+        <div class="stat-label">Hz Range</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">±1.5°</div>
+        <div class="stat-label">Direction Accuracy</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">&lt;50ms</div>
+        <div class="stat-label">Response Time</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">360°</div>
+        <div class="stat-label">Full Coverage</div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="section" id="about">
+      <div class="section-head">
+        <span class="num">01</span>
+        <h3>What It Does</h3>
+        <span class="line"></span>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-icon">🧭</div>
+          <h4>Direction Detection</h4>
+          <p>
+            Using a multi-microphone array, the device calculates the exact angle the
+            sound is coming from — displayed on a 360° compass with live needle tracking.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎵</div>
+          <h4>Frequency Analysis</h4>
+          <p>
+            A built-in FFT engine extracts the dominant frequency from 20 Hz up to
+            2000 Hz, giving you a precise Hz readout updated in real time.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📊</div>
+          <h4>Instant Feedback</h4>
+          <p>
+            All data is visualized on a single dashboard — direction, frequency,
+            and signal strength — with under 50 ms of latency for smooth tracking.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="section" id="how">
+      <div class="section-head">
+        <span class="num">02</span>
+        <h3>How It Works</h3>
+        <span class="line"></span>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-icon">🎙️</div>
+          <h4>1 · Capture</h4>
+          <p>
+            Three or more microphones sample the surrounding sound field at high
+            sample rates, capturing phase and amplitude differences between channels.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🧮</div>
+          <h4>2 · Compute</h4>
+          <p>
+            The processor uses Time Difference of Arrival (TDOA) to estimate the
+            source direction, while an FFT isolates the dominant frequency component.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📡</div>
+          <h4>3 · Display</h4>
+          <p>
+            Results are rendered on screen: the needle points to the source, and the
+            frequency value updates live. All in a clean, readable interface.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <section class="section" id="demo">
+      <div class="section-head">
+        <span class="num">03</span>
+        <h3>Interactive Demo</h3>
+        <span class="line"></span>
+      </div>
+      <div class="demo-wrap">
+        <div class="demo-inner">
+
+          <!-- mini compass -->
+          <div class="compass-mini">
+            <div class="ring"></div>
+            <div class="cardinal n" data-dir="N">N</div>
+            <div class="cardinal e" data-dir="E">E</div>
+            <div class="cardinal s" data-dir="S">S</div>
+            <div class="cardinal w" data-dir="W">W</div>
+            <div class="needle" id="needle"></div>
+            <div class="hub"></div>
+          </div>
+
+          <!-- controls + readout -->
+          <div class="demo-readout">
+            <div class="readout-box">
+              <div class="label">Dominant Frequency</div>
+              <div class="big">
+                <span id="freqDisplay">440</span><small> Hz</small>
+              </div>
+            </div>
+            <div class="readout-box">
+              <div class="label">Detected Direction</div>
+              <div class="big" style="font-size:1.6rem; letter-spacing:0;" id="dirDisplay">
+                0° · North
+              </div>
+            </div>
+            <div class="slider-wrap">
+              <div class="top-row">
+                <span>Frequency Slider</span>
+                <span id="freqReadout">440 Hz</span>
+              </div>
+              <input type="range" id="freqSlider" min="20" max="2000" value="440" step="1">
+            </div>
+            <p style="font-size:0.72rem; color: var(--text-muted); letter-spacing:0.4px; line-height:1.5;">
+              ↑ Drag the slider to simulate different frequencies. The compass needle
+              reacts in real time — just like the actual device.
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- TEAM -->
+    <section class="section" id="team">
+      <div class="section-head">
+        <span class="num">04</span>
+        <h3>Meet the Team</h3>
+        <span class="line"></span>
+      </div>
+      <div class="team-grid">
+        <div class="member">
+          <div class="avatar">A</div>
+          <h5>Aditya</h5>
+          <div class="role">Project Lead</div>
+        </div>
+        <div class="member">
+          <div class="avatar">Y</div>
+          <h5>Yoga</h5>
+          <div class="role">Hardware Design</div>
+        </div>
+        <div class="member">
+          <div class="avatar">A</div>
+          <h5>Abhinav</h5>
+          <div class="role">Signal Processing</div>
+        </div>
+        <div class="member">
+          <div class="avatar">A</div>
+          <h5>Anshuman</h5>
+          <div class="role">Frontend & UI</div>
+        </div>
+        <div class="member">
+          <div class="avatar">D</div>
+          <h5>Digraj</h5>
+          <div class="role">Research & Testing</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" id="faq">
+      <div class="section-head">
+        <span class="num">05</span>
+        <h3>Frequently Asked Questions</h3>
+        <span class="line"></span>
+      </div>
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-q">
+            What exactly is a Directional Sound Frequency Teller?
+            <span class="chev">▼</span>
+          </button>
+          <div class="faq-a">
+            It's an acoustic device that detects two things simultaneously: the direction
+            a sound is coming from (0°–360°) and its dominant frequency (in Hz). Think of
+            it as a compass for your ears — it tells you where and what you're hearing.
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">
+            How accurate is the direction detection?
+            <span class="chev">▼</span>
+          </button>
+          <div class="faq-a">
+            Under normal conditions, the system achieves ±1.5° accuracy using a
+            3-microphone array with TDOA processing. Accuracy improves with more
+            microphones and a quieter environment.
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">
+            What is the "Permium 4¢" badge?
+            <span class="chev">▼</span>
+          </button>
+          <div class="faq-a">
+            It's our tongue-in-cheek premium branding. The Pro edition unlocks the full
+            20–2000 Hz range, higher refresh rates, and the advanced compass visualization
+            you see on this page. The "4¢" is a playful nod to affordable premium software.
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">
+            Can I use this for real hardware?
+            <span class="chev">▼</span>
+          </button>
+          <div class="faq-a">
+            Yes! The front-end dashboard is designed to connect to any serial, USB, or
+            WebSocket data source. The demo slider simulates input — in production, your
+            hardware sends direction and frequency values directly.
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">
+            Who built this project?
+            <span class="chev">▼</span>
+          </button>
+          <div class="faq-a">
+            This project was designed and developed by Aditya, Yoga, Abhinav, Anshuman,
+            and Digraj — covering hardware, signal processing, UI/UX, and testing.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <p>© 2025 Sound Compass · Directional Sound Frequency Teller · Permium 4¢</p>
+      <div class="names">
+        Made by <b>Aditya</b> · <b>Yoga</b> · <b>Abhinav</b> · <b>Anshuman</b> · <b>Digraj</b>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      // ---- DOM refs ----
+      const freqDisplay = document.getElementById('freqDisplay');
+      const freqReadout = document.getElementById('freqReadout');
+      const freqSlider = document.getElementById('freqSlider');
+      const dirDisplay = document.getElementById('dirDisplay');
+      const needle = document.getElementById('needle');
+
+      let currentFrequency = 440;
+
+      // ---- direction names ----
+      const dirNames = [
+        'North', 'North-Northeast', 'Northeast', 'East-Northeast',
+        'East', 'East-Southeast', 'Southeast', 'South-Southeast',
+        'South', 'South-Southwest', 'Southwest', 'West-Southwest',
+        'West', 'West-Northwest', 'Northwest', 'North-Northwest'
+      ];
+
+      // ---- map frequency → angle (0-360) ----
+      function frequencyToAngle(freq) {
+        const minF = 20, maxF = 2000;
+        const t = (freq - minF) / (maxF - minF);
+        // base rotation + a little organic curve
+        const base = t * 360;
+        const wobble = 10 * Math.sin(t * Math.PI * 2.5) + 5 * Math.cos(t * Math.PI * 4);
+        let angle = (base + wobble) % 360;
+        if (angle < 0) angle += 360;
+        return angle;
+      }
+
+      // ---- update the whole UI ----
+      function updateFromFrequency(freq) {
+        // clamp + sync slider
+        const clamped = Math.min(2000, Math.max(20, freq));
+        currentFrequency = clamped;
+        freqDisplay.textContent = Math.round(clamped);
+        freqReadout.textContent = Math.round(clamped) + ' Hz';
+        freqSlider.value = Math.round(clamped);
+
+        // compute angle
+        const angle = frequencyToAngle(clamped);
+
+        // rotate needle
+        needle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+
+        // update direction text
+        const idx = Math.round(angle / 22.5) % 16;
+        dirDisplay.textContent = `${Math.round(angle)}° · ${dirNames[idx]}`;
+
+        // highlight cardinal
+        document.querySelectorAll('.cardinal').forEach(el => el.classList.remove('active'));
+        const cardinalMap = {
+          'North': 'N', 'North-Northeast': 'N', 'Northeast': 'E', 'East-Northeast': 'E',
+          'East': 'E', 'East-Southeast': 'E', 'Southeast': 'S', 'South-Southeast': 'S',
+          'South': 'S', 'South-Southwest': 'S', 'Southwest': 'W', 'West-Southwest': 'W',
+          'West': 'W', 'West-Northwest': 'W', 'Northwest': 'N', 'North-Northwest': 'N'
+        };
+        const card = cardinalMap[dirNames[idx]] || 'N';
+        const el = document.querySelector(`.cardinal[data-dir="${card}"]`);
+        if (el) el.classList.add('active');
+      }
+
+      // ---- slider input ----
+      freqSlider.addEventListener('input', function(e) {
+        updateFromFrequency(Number(e.target.value));
+      });
+
+      // ---- subtle live drift for realism ----
+      let driftPhase = 0;
+      setInterval(function() {
+        driftPhase += 0.028;
+        const baseAngle = frequencyToAngle(currentFrequency);
+        const drift = 2.2 * Math.sin(driftPhase * 2.3) + 1.3 * Math.cos(driftPhase * 1.7);
+        let displayAngle = (baseAngle + drift) % 360;
+        if (displayAngle < 0) displayAngle += 360;
+
+        needle.style.transform = `translateX(-50%) rotate(${displayAngle}deg)`;
+        const idx = Math.round(displayAngle / 22.5) % 16;
+        dirDisplay.textContent = `${Math.round(displayAngle)}° · ${dirNames[idx]}`;
+
+        document.querySelectorAll('.cardinal').forEach(el => el.classList.remove('active'));
+        const cardinalMap = {
+          'North': 'N', 'North-Northeast': 'N', 'Northeast': 'E', 'East-Northeast': 'E',
+          'East': 'E', 'East-Southeast': 'E', 'Southeast': 'S', 'South-Southeast': 'S',
+          'South': 'S', 'South-Southwest': 'S', 'Southwest': 'W', 'West-Southwest': 'W',
+          'West': 'W', 'West-Northwest': 'W', 'Northwest': 'N', 'North-Northwest': 'N'
+        };
+        const card = cardinalMap[dirNames[idx]] || 'N';
+        const el = document.querySelector(`.cardinal[data-dir="${card}"]`);
+        if (el) el.classList.add('active');
+      }, 170);
+
+      // ---- FAQ accordion ----
+      document.querySelectorAll('.faq-q').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const item = this.parentElement;
+          const isOpen = item.classList.contains('open');
+          // close all
+          document.querySelectorAll('.faq-item').forEach(function(i) {
+            i.classList.remove('open');
+          });
+          // toggle current
+          if (!isOpen) item.classList.add('open');
+        });
+      });
+
+      // open first FAQ by default
+      const firstFaq = document.querySelector('.faq-item');
+      if (firstFaq) firstFaq.classList.add('open');
+
+      // ---- smooth scroll for nav links ----
+      document.querySelectorAll('a[href^="#"]').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+          const target = document.querySelector(this.getAttribute('href'));
+          if (target) {
+            e.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      });
+
+      // ---- init ----
+      updateFromFrequency(440);
+
+    })();
+  </script>
+
+</body>
+</html>
